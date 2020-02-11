@@ -815,12 +815,6 @@ def validate_model(  # noqa: C901 (ignore complexity)
             return {}, set(), ValidationError([ErrorWrapper(exc, loc=ROOT_KEY)], cls_)
 
     for name, field in model.__fields__.items():
-        if type(field.type_) == ForwardRef:
-            raise ConfigError(
-                f'field "{field.name}" not yet prepared so type is still a ForwardRef, '
-                f'you might need to call {cls_.__name__}.update_forward_refs().'
-            )
-
         value = input_data.get(field.alias, _missing)
         using_name = False
         if value is _missing and config.allow_population_by_field_name and field.alt_alias:

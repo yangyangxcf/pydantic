@@ -135,9 +135,11 @@ def main():
     assert Foo(b={'a': '321'}).dict() == {'a': 123, 'b': {'a': 321, 'b': None}}
 
 
-def test_missing_update_forward_refs(create_module):
-    module = create_module(
-        """
+@pytest.mark.parametrize(
+    'code,value,name',
+    [
+        (
+            """
 from pydantic import BaseModel
 from pydantic.typing import ForwardRef
 
@@ -146,11 +148,31 @@ Foo = ForwardRef('Foo')
 class Foo(BaseModel):
     a: int = 123
     b: Foo = None
-    """
-    )
+    """,
+            '123',
+            'b',
+        ),
+        (
+            """
+from pydantic import BaseModel
+from pydantic.typing import ForwardRef, Tuple
+
+Foo = ForwardRef('Foo')
+
+class Foo(BaseModel):
+    a: int = 123
+    b: Tuple[Foo] = None
+    """,
+            ('123',),
+            'b_0',
+        ),
+    ],
+)
+def test_missing_update_forward_refs(create_module, code, value, name):
+    module = create_module(code)
     with pytest.raises(ConfigError) as exc_info:
-        module.Foo(b=123)
-    assert str(exc_info.value).startswith('field "b" not yet prepared so type is still a ForwardRef')
+        module.Foo(b=value)
+    assert str(exc_info.value).startswith(f'field "{name}" not yet prepared so type is still a ForwardRef')
 
 
 def test_forward_ref_dataclass(create_module):
